@@ -38,11 +38,13 @@ ipconfig getifaddr en0
 - On iOS, tilt needs a user tap on `Enable Tilt` to request permission
 - Best used in landscape orientation
 
-## Controls
+## Controls (Phone as Pitcher)
 
-- Drag finger: pour path
-- Right slider: pour flow rate
-- Quick tap on cup: cut-through
-- Enable Tilt: toggle cup-tilt emulation
-- Reset Cup: clear liquid surface
-- Prev/Next Shape: switch tutorial target
+- `Enable Pitcher`: requests sensor permission and enables motion controls
+- `Calibrate Grip`: sets current hold angle as neutral pitcher position
+- Tilt phone forward/back: controls pour flow
+- Roll phone left/right: controls horizontal drawing path
+- Vertical slider: assist gain (how strongly tilt affects flow)
+- Down-up-down motion during pours: gives rhythm bonus to score
+- `Reset Cup`: clear liquid surface
+- `Prev/Next Shape`: switch tutorial target
