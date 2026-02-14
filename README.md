@@ -50,3 +50,5 @@ ipconfig getifaddr en0
 - Down-up-down motion during pours: gives rhythm bonus to score
 - `Reset Cup`: clear liquid surface
 - `Prev/Next Shape`: switch tutorial target
+- `Start Tutorial`: auto-animates near-perfect motion and result for the current shape
+- `Stop Tutorial`: returns to normal pitcher practice mode

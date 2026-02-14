@@ -134,7 +134,7 @@
 
     .footer {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 8px;
     }
 
@@ -176,6 +176,7 @@
 
     <div class="footer">
       <button class="btn" id="prevBtn">Prev Shape</button>
+      <button class="btn alt" id="tutorialBtn">Start Tutorial</button>
       <button class="btn" id="nextBtn">Next Shape</button>
     </div>
   </div>
@@ -194,6 +195,7 @@
     const flipPourBtn = document.getElementById("flipPourBtn");
     const clearBtn = document.getElementById("clearBtn");
     const prevBtn = document.getElementById("prevBtn");
+    const tutorialBtn = document.getElementById("tutorialBtn");
     const nextBtn = document.getElementById("nextBtn");
     const lessonChip = document.getElementById("lessonChip");
     const scoreChip = document.getElementById("scoreChip");
@@ -225,7 +227,10 @@
       lastFlow: 0,
       rhythmBonus: 0,
       rollSign: 1,
-      pourSign: 1
+      pourSign: 1,
+      tutorialActive: false,
+      tutorialT: 0,
+      tutorialDuration: 6
     };
 
     const grid = {
@@ -445,6 +450,86 @@
       renderCup();
     }
 
+    function getTutorialPose(tNorm) {
+      const p = clamp(tNorm, 0, 1);
+      let x = 0.5;
+      let y = 0.57;
+      let flow = 0;
+      let tilt = 0;
+      let cue = "Hold neutral";
+
+      if (lessonIndex === 0) {
+        x = 0.5;
+        y = 0.55;
+        flow = p < 0.65 ? 0.62 : 0.18;
+        tilt = 0;
+        cue = p < 0.65 ? "Tilt forward and hold center" : "Lift slightly to finish";
+      } else if (lessonIndex === 1) {
+        x = 0.5 + Math.sin(p * Math.PI) * 0.06 * (p < 0.7 ? 1 : 0.2);
+        y = p < 0.72 ? 0.56 : 0.56 + (p - 0.72) * 0.55;
+        flow = p < 0.72 ? 0.58 : 0.25;
+        tilt = (x - 0.5) * 2.4;
+        cue = p < 0.72 ? "Small left-right heart lobes" : "Pull through downward";
+      } else if (lessonIndex === 2) {
+        const stage = Math.floor(p * 4);
+        x = 0.5;
+        y = 0.68 - stage * 0.12;
+        flow = stage < 3 ? 0.58 : 0.22;
+        if (stage === 3) y = 0.40 + (p * 4 - 3) * 0.28;
+        cue = stage < 3 ? "Pulse down-up-down blobs" : "Finish with center pull-through";
+      } else if (lessonIndex === 3) {
+        x = 0.5 + Math.sin(p * 16 * Math.PI) * 0.09 * (1 - p * 0.35);
+        y = 0.34 + p * 0.44;
+        flow = p < 0.86 ? 0.54 : 0.22;
+        tilt = clamp((x - 0.5) * 3.2, -1, 1);
+        cue = p < 0.86 ? "Oscillate roll while moving down" : "Pull through center";
+      } else {
+        const bodyPhase = clamp(p / 0.72, 0, 1);
+        x = 0.48 + Math.sin(bodyPhase * 11 * Math.PI) * 0.07 * (1 - bodyPhase * 0.4);
+        y = 0.40 + bodyPhase * 0.28;
+        if (p > 0.72) {
+          const neck = (p - 0.72) / 0.28;
+          x = 0.56 + neck * 0.04;
+          y = 0.50 - neck * 0.19;
+        }
+        flow = p < 0.9 ? 0.52 : 0.26;
+        tilt = clamp((x - 0.5) * 3, -1, 1);
+        cue = p < 0.72 ? "Build swan body with rosetta motion" : "Light neck and head finish";
+      }
+
+      return { x, y, flow, tilt, cue };
+    }
+
+    function applyTutorialPolish(dt) {
+      const speed = dt * 60;
+      for (let i = 0; i < targetCache.length; i++) {
+        if (targetCache[i]) {
+          grid.white[i] = clamp(grid.white[i] + 0.0042 * speed, 0, 1);
+          grid.brown[i] = clamp(grid.brown[i] - 0.0029 * speed, 0.1, 1);
+        } else {
+          grid.white[i] = clamp(grid.white[i] - 0.0016 * speed, 0, 1);
+          grid.brown[i] = clamp(grid.brown[i] + 0.0012 * speed, 0.1, 1);
+        }
+      }
+    }
+
+    function updateTutorial(dt) {
+      state.tutorialT += dt;
+      const cycle = state.tutorialDuration;
+      const phase = (state.tutorialT % cycle) / cycle;
+      const pose = getTutorialPose(phase);
+
+      state.pointerX = Math.round(clamp(pose.x * (grid.w - 1), 6, grid.w - 7));
+      state.pointerY = Math.round(clamp(pose.y * (grid.h - 1), 8, grid.h - 9));
+      state.pourFlow = pose.flow;
+      state.pouring = pose.flow > 0.05;
+      state.tilt = pose.tilt;
+      state.rhythmBonus = 20;
+      motionChip.textContent = `Tutorial: ${Math.round(phase * 100)}%`;
+      hintPrimary.textContent = "Tutorial movement running (copy this phone motion)";
+      hintSecondary.textContent = pose.cue;
+    }
+
     function calibrateGrip() {
       if (state.beta == null || state.gamma == null) return;
       state.neutralBeta = state.beta;
@@ -535,13 +620,18 @@
       const dt = Math.min(0.04, (now - state.lastTime) / 1000);
       state.lastTime = now;
 
-      updatePitcherFromSensors(dt);
+      if (state.tutorialActive) {
+        updateTutorial(dt);
+      } else {
+        updatePitcherFromSensors(dt);
+      }
 
       if (state.pouring) {
         pourAt(state.pointerX, state.pointerY, dt * 60);
       }
 
       simulate(dt);
+      if (state.tutorialActive) applyTutorialPolish(dt);
       if ((now % 420) < 16) recalcScore();
       renderCup();
       requestAnimationFrame(loop);
@@ -564,6 +654,21 @@
     prevBtn.addEventListener("click", () => {
       lessonIndex = (lessonIndex - 1 + lessons.length) % lessons.length;
       updateLesson();
+    });
+    tutorialBtn.addEventListener("click", () => {
+      state.tutorialActive = !state.tutorialActive;
+      state.tutorialT = 0;
+      tutorialBtn.textContent = state.tutorialActive ? "Stop Tutorial" : "Start Tutorial";
+      if (state.tutorialActive) {
+        resetCup();
+        motionChip.textContent = "Tutorial: 0%";
+      } else {
+        state.pouring = false;
+        state.pourFlow = 0;
+        motionChip.textContent = state.pitcherEnabled ? "Pitcher: On" : "Pitcher: Off";
+        hintPrimary.textContent = "Tap \"Enable Pitcher\" then calibrate neutral grip";
+        hintSecondary.textContent = "Tilt forward to pour, roll left-right to draw";
+      }
     });
 
     nextBtn.addEventListener("click", () => {
