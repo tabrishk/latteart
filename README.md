@@ -44,6 +44,8 @@ ipconfig getifaddr en0
 - `Calibrate Grip`: sets current hold angle as neutral pitcher position
 - Tilt phone forward/back: controls pour flow
 - Roll phone left/right: controls horizontal drawing path
+- `Flip Roll`: invert left-right direction if your device reports opposite
+- `Flip Pour`: invert forward-back pour direction if needed
 - Vertical slider: assist gain (how strongly tilt affects flow)
 - Down-up-down motion during pours: gives rhythm bonus to score
 - `Reset Cup`: clear liquid surface

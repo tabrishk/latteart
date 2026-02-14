@@ -94,7 +94,7 @@
 
     .controls {
       display: grid;
-      grid-template-rows: 1fr auto auto auto;
+      grid-template-rows: 1fr auto auto auto auto auto;
       gap: 8px;
       min-height: 0;
     }
@@ -168,6 +168,8 @@
         </div>
         <button class="btn alt" id="pitcherBtn">Enable Pitcher</button>
         <button class="btn" id="calibrateBtn">Calibrate Grip</button>
+        <button class="btn" id="flipRollBtn">Flip Roll</button>
+        <button class="btn" id="flipPourBtn">Flip Pour</button>
         <button class="btn warn" id="clearBtn">Reset Cup</button>
       </div>
     </div>
@@ -188,6 +190,8 @@
     const assistSlider = document.getElementById("assistSlider");
     const pitcherBtn = document.getElementById("pitcherBtn");
     const calibrateBtn = document.getElementById("calibrateBtn");
+    const flipRollBtn = document.getElementById("flipRollBtn");
+    const flipPourBtn = document.getElementById("flipPourBtn");
     const clearBtn = document.getElementById("clearBtn");
     const prevBtn = document.getElementById("prevBtn");
     const nextBtn = document.getElementById("nextBtn");
@@ -219,7 +223,9 @@
       rhythmFlips: 0,
       lastPitchSign: 0,
       lastFlow: 0,
-      rhythmBonus: 0
+      rhythmBonus: 0,
+      rollSign: 1,
+      pourSign: 1
     };
 
     const grid = {
@@ -456,8 +462,8 @@
       }
 
       const assist = Number(assistSlider.value) / 100;
-      const betaRel = state.beta - state.neutralBeta;
-      const gammaRel = state.gamma - state.neutralGamma;
+      const betaRel = (state.beta - state.neutralBeta) * state.pourSign;
+      const gammaRel = (state.gamma - state.neutralGamma) * state.rollSign;
 
       state.pointerX = Math.round(clamp(((gammaRel + 28) / 56) * (grid.w - 1), 6, grid.w - 7));
       state.pointerY = Math.round(clamp((0.68 - (betaRel / 80)) * (grid.h - 1), 8, grid.h - 9));
@@ -543,6 +549,16 @@
 
     pitcherBtn.addEventListener("click", enablePitcher);
     calibrateBtn.addEventListener("click", calibrateGrip);
+    flipRollBtn.addEventListener("click", () => {
+      state.rollSign *= -1;
+      if (navigator.vibrate) navigator.vibrate(10);
+      hintSecondary.textContent = `Roll direction flipped (${state.rollSign > 0 ? "normal" : "reversed"})`;
+    });
+    flipPourBtn.addEventListener("click", () => {
+      state.pourSign *= -1;
+      if (navigator.vibrate) navigator.vibrate(10);
+      hintSecondary.textContent = `Pour direction flipped (${state.pourSign > 0 ? "normal" : "reversed"})`;
+    });
     clearBtn.addEventListener("click", resetCup);
 
     prevBtn.addEventListener("click", () => {
